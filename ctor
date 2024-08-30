@@ -1,0 +1,59 @@
+#!/bin/bash
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+BOLD='\033[0;1m'
+BOLD_RED='\033[1;31m'
+BOLD_GREEN='\033[1;32m'
+RESET='\033[0m'
+
+function echo_usage ()
+{
+	echo "Usage: $0 [options]"
+	echo
+	echo "\t-r  \t Show public IP if not connected to TOR"
+	echo "\t-h  --help\t Show this help message."
+	echo
+}
+
+function print_public_ip ()
+{
+	data=$(curl "https://check.torproject.org/api/ip" --silent)
+	istor=$(echo $data | jq '.IsTor')
+	ip=$(echo $data | jq -r '.IP')
+
+	if [[ $istor == "true" ]]; then
+		istor="$BOLD_GREEN""true"
+		ip="$GREEN$ip"
+	else
+		istor="$BOLD_RED""false"
+		if [[ $redacted == "false" ]]; then
+			ip="$RED$ip"
+		else
+			ip="$RED[REDACTED]"
+		fi
+	fi
+
+	echo -e "$BOLD""Tor:$RESET\t$istor"
+	echo -e "$BOLD""IP:$RESET\t$ip"
+}
+
+redacted="true"
+for arg in "$@"; do
+	case arg in
+		-r)
+			redacted="false"
+			;;
+
+		-h|--help)
+			echo_usage
+			;;
+
+		*)
+			echo "Unrecognized argument: $arg"
+			exit 1
+			;;
+	esac
+done
+
+print_public_ip
